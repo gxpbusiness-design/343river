@@ -1061,6 +1061,103 @@ body.has-text #clear-btn { opacity:.55; pointer-events:all; }
 .qt-prompt button:hover { border-color:var(--a1); color:var(--a1); }
 .qt-prompt button.danger:hover { border-color:#f87171; color:#f87171; }
 
+
+/* ── SELECT MODE ── */
+.col-sel-btn {
+  width:24px; height:24px; border-radius:7px; border:none; background:none;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--text3); cursor:pointer;
+  transition:color .15s, background .15s;
+}
+.col-sel-btn:hover { color:var(--a1); background:rgba(var(--a1-rgb),.1); }
+.col-sel-btn.active { color:var(--a1); background:rgba(var(--a1-rgb),.14); }
+.col-sel-btn svg { width:13px; height:13px; }
+
+/* Selection checkbox overlay on cards */
+.sel-check-wrap {
+  position:absolute; top:8px; left:8px; z-index:5;
+  display:none;
+}
+.sel-mode-notes .note-card .sel-check-wrap,
+.sel-mode-notes .note-card-xnote .sel-check-wrap,
+.sel-mode-notes .note-card-todo .sel-check-wrap,
+.sel-mode-notes [class*="card-"] .sel-check-wrap,
+.sel-mode-tasks .note-card-todo .sel-check-wrap,
+.sel-mode-tasks .card-quicktask .sel-check-wrap,
+.sel-mode-tasks .card-event .sel-check-wrap,
+.sel-mode-tasks .card-reminder .sel-check-wrap { display:block; }
+.sel-check-wrap input[type=checkbox] { accent-color:var(--a1); width:15px; height:15px; cursor:pointer; }
+
+/* Selected card highlight */
+.card-selected { outline:2px solid var(--a1); outline-offset:2px; border-radius:14px; }
+
+/* Group action bar */
+#notes-group-bar, #tasks-group-bar {
+  display:none; align-items:center; gap:8px;
+  padding:8px 12px 4px; flex-shrink:0;
+}
+#notes-group-bar.show, #tasks-group-bar.show { display:flex; }
+.group-bar-count {
+  font-size:11px; font-family:var(--mono); color:var(--a1); flex:1; letter-spacing:.04em;
+}
+.group-bar-btn {
+  padding:5px 14px; border-radius:100px; border:none;
+  background:linear-gradient(135deg,var(--a1),var(--s1));
+  color:#fff; font-family:var(--ui-font); font-size:11px; font-weight:500;
+  cursor:pointer; transition:transform .15s, box-shadow .15s;
+  box-shadow:0 2px 10px rgba(var(--a1-rgb),.28);
+}
+.group-bar-btn:hover { transform:translateY(-1px); }
+.group-bar-cancel {
+  padding:5px 10px; border-radius:100px; border:1px solid var(--border);
+  background:none; font-family:var(--ui-font); font-size:11px; color:var(--text3); cursor:pointer;
+}
+.group-bar-cancel:hover { color:var(--text); border-color:var(--text3); }
+
+/* Folder/group container */
+.note-folder, .task-folder {
+  border:1.5px solid var(--s1); border-radius:16px; overflow:hidden;
+  margin-bottom:4px; position:relative;
+}
+.folder-header {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; cursor:pointer; user-select:none;
+  transition:background .15s;
+}
+.folder-header:hover { background:rgba(var(--s1-rgb),.06); }
+.folder-icon { font-size:13px; flex-shrink:0; }
+.folder-name {
+  flex:1; font-size:13px; font-weight:600; color:var(--text);
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.folder-name-input {
+  flex:1; border:none; outline:none; background:transparent;
+  font-size:13px; font-weight:600; color:var(--text); font-family:var(--ui-font);
+  min-width:60px;
+}
+.folder-count {
+  font-size:10px; font-family:var(--mono); color:var(--text3); letter-spacing:.04em; flex-shrink:0;
+}
+.folder-caret {
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  color:var(--text3); transition:transform .22s; flex-shrink:0;
+}
+.folder-caret svg { width:12px; height:12px; }
+.folder-caret.open { transform:rotate(90deg); }
+.folder-body {
+  display:flex; flex-direction:column; gap:6px;
+  padding:6px 10px 10px; border-top:1px solid rgba(var(--s1-rgb),.2);
+  max-height:1000px; overflow:hidden; transition:max-height .28s cubic-bezier(.4,0,.2,1), padding .28s;
+}
+.folder-body.closed { max-height:0; padding-top:0; padding-bottom:0; border-top:none; }
+.folder-del {
+  width:22px; height:22px; border-radius:6px; border:none; background:none;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--text3); font-size:14px; cursor:pointer; opacity:0; transition:opacity .15s;
+}
+.note-folder:hover .folder-del, .task-folder:hover .folder-del { opacity:.5; }
+.folder-del:hover { opacity:1!important; color:#f87171; }
+
 /* Word count & flash */
 #word-count {
   position:fixed; bottom:32px; right:76px; z-index:100;
@@ -1354,11 +1451,21 @@ body.has-text #word-count { opacity:.7; }
       <div class="river-col" id="col-notes">
         <div class="col-header">
           <span class="col-label">Notes</span>
-          <button class="col-collapse-btn" onclick="colCollapse('col-notes',this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+            <button class="col-sel-btn" id="notes-sel-btn" onclick="toggleSelectMode('notes')" title="Select notes">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1" opacity=".4"/><rect x="3" y="14" width="7" height="7" rx="1" opacity=".4"/><rect x="14" y="14" width="7" height="7" rx="1" opacity=".4"/></svg>
+            </button>
+            <button class="col-collapse-btn" onclick="colCollapse('col-notes',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+          </div>
         </div>
         <div class="col-body" id="col-notes-body">
+          <div id="notes-group-bar">
+            <span class="group-bar-count" id="notes-sel-count">0 selected</span>
+            <button class="group-bar-btn" onclick="groupSelected('notes')">Group into folder</button>
+            <button class="group-bar-cancel" onclick="toggleSelectMode('notes')">Cancel</button>
+          </div>
           <div class="river-widget" id="dashboard-widget">
             <div class="dash-row">
               <div class="dash-stat"><span class="dash-num" id="dash-notes-n">0</span><span class="dash-lbl">notes</span></div>
@@ -1378,11 +1485,21 @@ body.has-text #word-count { opacity:.7; }
       <div class="river-col" id="col-tasks">
         <div class="col-header">
           <span class="col-label">Tasks</span>
-          <button class="col-collapse-btn" onclick="colCollapse('col-tasks',this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+            <button class="col-sel-btn" id="tasks-sel-btn" onclick="toggleSelectMode('tasks')" title="Select tasks">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1" opacity=".4"/><rect x="3" y="14" width="7" height="7" rx="1" opacity=".4"/><rect x="14" y="14" width="7" height="7" rx="1" opacity=".4"/></svg>
+            </button>
+            <button class="col-collapse-btn" onclick="colCollapse('col-tasks',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+          </div>
         </div>
         <div class="col-body" id="col-tasks-body">
+          <div id="tasks-group-bar">
+            <span class="group-bar-count" id="tasks-sel-count">0 selected</span>
+            <button class="group-bar-btn" onclick="groupSelected('tasks')">Group into folder</button>
+            <button class="group-bar-cancel" onclick="toggleSelectMode('tasks')">Cancel</button>
+          </div>
           <div id="todos-grid"></div>
         </div>
       </div>
@@ -2629,11 +2746,11 @@ function renderNotes(){
   // col-3 tasks: todo, event, reminder
   // col-2 notes: everything else
   const WIDGET_TYPES=['timer','counter','calculator','metronome','duration','colorpicker'];
-  const TASK_TYPES=['todo','event','reminder','quicktask'];
+  const TASK_TYPES=['todo','event','reminder','quicktask','taskfolder'];
 
   const widgets = notesArr.filter(n=>WIDGET_TYPES.includes(n.type));
   const tasks   = notesArr.filter(n=>TASK_TYPES.includes(n.type));
-  const notes   = notesArr.filter(n=>!WIDGET_TYPES.includes(n.type)&&!TASK_TYPES.includes(n.type));
+  const notes   = notesArr.filter(n=>!WIDGET_TYPES.includes(n.type)&&!TASK_TYPES.includes(n.type)); // includes notefolder
 
   // Render widgets into col-1 body (after the clock)
   const wExtra=document.getElementById('widgets-extra');
@@ -2644,6 +2761,7 @@ function renderNotes(){
   notesGrid.innerHTML = notes.length
     ? notes.map(n=>{
         const i=notesArr.indexOf(n);
+        if(n.type==='notefolder') return renderFolderCard(r,n,i,'notes');
         if(n.type==='extended') return renderXNoteCard(r.id,n,i);
         if(n.type&&n.type!=='simple') return renderAtCard(r,n,i);
         return renderSimpleCard(r.id,n,i,notes.indexOf(n));
@@ -2673,12 +2791,13 @@ function renderNotes(){
     let pastRemSection = false;
     sorted.forEach(n=>{
       const i = notesArr.indexOf(n);
-      // Insert expired divider label before first expired reminder
       if(n.type==='reminder' && reminderMs(n)<now && !pastRemSection){
         pastRemSection=true;
         html += `<div class="tasks-section-label expired">Past Reminders</div>`;
       }
-      html += n.type==='todo' ? renderTodoCard(r.id,n,i) : renderAtCard(r,n,i);
+      if(n.type==='taskfolder') html += renderFolderCard(r,n,i,'tasks');
+      else if(n.type==='todo') html += renderTodoCard(r.id,n,i);
+      else html += renderAtCard(r,n,i);
     });
     return html;
   })();
@@ -2712,7 +2831,8 @@ function renderSimpleCard(rid,n,origIdx,displayIdx){
   const content=n.html||escHtml(n.text);
   const isLong=n.text.length>180;
   const plainText=(n.text||'').replace(/<[^>]+>/g,'').trim();
-  return `<div class="note-card${displayIdx%2?' nc-even':''}" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-rid="${rid}" data-idx="${origIdx}" data-drag-rid="${rid}" data-drag-idx="${origIdx}">
+  return `<div class="note-card${displayIdx%2?' nc-even':''}" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-rid="${rid}" data-idx="${origIdx}" data-drag-rid="${rid}" data-drag-idx="${origIdx}" data-sel-idx="${origIdx}" data-sel-col="notes">
+    <div class="sel-check-wrap"><input type="checkbox" onchange="toggleCardSel('notes',${origIdx},this.checked)" onclick="event.stopPropagation()"></div>
     <div class="note-card-text" id="nct-${origIdx}">${content}</div>
     ${isLong?`<button class="note-card-more show" id="ncm-${origIdx}" onclick="toggleNoteExpand(${origIdx})">view more ↓</button>`:''}
     <div class="note-card-time">${n.label||''}</div>
@@ -2731,7 +2851,8 @@ document.head.appendChild(ncEvenStyle);
 function renderXNoteCard(rid,n,origIdx){
   const hasBody = !!(n.bodyHTML||'').trim();
   const cardId = `xnc-${origIdx}`;
-  return `<div class="note-card-xnote" id="${cardId}" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-drag-rid="${rid}" data-drag-idx="${origIdx}">
+  return `<div class="note-card-xnote" id="${cardId}" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-drag-rid="${rid}" data-drag-idx="${origIdx}" data-sel-idx="${origIdx}" data-sel-col="notes">
+    <div class="sel-check-wrap"><input type="checkbox" onchange="toggleCardSel('notes',${origIdx},this.checked)" onclick="event.stopPropagation()"></div>
     <div class="nc-type-badge xnote">
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
       Extended Note
@@ -2776,7 +2897,8 @@ function renderTodoCard(rid,n,origIdx){
   const done=tasks.filter(t=>t.done).length;
   const pct=tasks.length?Math.round(done/tasks.length*100):0;
   const preview=tasks.slice(0,4);
-  return `<div class="note-card-todo" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-drag-rid="${rid}" data-drag-idx="${origIdx}">
+  return `<div class="note-card-todo" oncontextmenu="openCtxMenu(event,'${rid}',${origIdx})" data-drag-rid="${rid}" data-drag-idx="${origIdx}" data-sel-idx="${origIdx}" data-sel-col="tasks">
+    <div class="sel-check-wrap"><input type="checkbox" onchange="toggleCardSel('tasks',${origIdx},this.checked)" onclick="event.stopPropagation()"></div>
     <div class="nc-type-badge todo">
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Task Board
@@ -4679,6 +4801,146 @@ function initQuickTaskDrop(){
       saveData(); renderNotes(); flashMsg('Task moved to '+todo.title);
     });
   });
+}
+
+
+// ══════════════════════════════════════
+//  SELECTION MODE + FOLDER/GROUP SYSTEM
+// ══════════════════════════════════════
+const _selState = { notes: new Set(), tasks: new Set() };
+let _selModeNotes = false, _selModeTasks = false;
+
+function toggleSelectMode(col){
+  if(col==='notes'){
+    _selModeNotes=!_selModeNotes;
+    _selState.notes.clear();
+    document.getElementById('col-notes-body').classList.toggle('sel-mode-notes',_selModeNotes);
+    document.getElementById('notes-sel-btn').classList.toggle('active',_selModeNotes);
+    document.getElementById('notes-group-bar').classList.toggle('show',_selModeNotes);
+    updateSelCount('notes');
+    if(!_selModeNotes) renderNotes();
+  } else {
+    _selModeTasks=!_selModeTasks;
+    _selState.tasks.clear();
+    document.getElementById('col-tasks-body').classList.toggle('sel-mode-tasks',_selModeTasks);
+    document.getElementById('tasks-sel-btn').classList.toggle('active',_selModeTasks);
+    document.getElementById('tasks-group-bar').classList.toggle('show',_selModeTasks);
+    updateSelCount('tasks');
+    if(!_selModeTasks) renderNotes();
+  }
+}
+function updateSelCount(col){
+  const n=_selState[col].size;
+  const el=document.getElementById(col+'-sel-count');
+  if(el) el.textContent=n===0?'Select items to group':n+' selected';
+  const btn=document.querySelector('#'+col+'-group-bar .group-bar-btn')||document.querySelector('#notes-group-bar .group-bar-btn')||document.querySelector('#tasks-group-bar .group-bar-btn');
+}
+function toggleCardSel(col, origIdx, checked){
+  if(checked) _selState[col].add(origIdx);
+  else _selState[col].delete(origIdx);
+  updateSelCount(col);
+  // Toggle highlight
+  const card=document.querySelector(`[data-sel-idx="${origIdx}"][data-sel-col="${col}"]`);
+  if(card) card.classList.toggle('card-selected',checked);
+}
+
+function groupSelected(col){
+  const r=getActiveRiver(); if(!r) return;
+  const indices=[..._selState[col]].sort((a,b)=>a-b);
+  if(indices.length<1){ flashMsg('Select at least 1 item'); return; }
+
+  const folderName=promptInline('Folder name:', 'Untitled Folder', name=>{
+    if(!name) return;
+    // Collect note ids in this folder
+    const noteIds=indices.map(i=>r.notes[i]?.id).filter(Boolean);
+    // Create folder note
+    const folder={
+      id:Date.now(),
+      type:col==='notes'?'notefolder':'taskfolder',
+      name,
+      noteIds,
+      open:true,
+      ts:new Date().toISOString(),
+      label:nowLabel()
+    };
+    r.notes.unshift(folder);
+    saveData();
+    _selState[col].clear();
+    toggleSelectMode(col); // exits select mode, triggers renderNotes
+  });
+}
+
+// Inline name prompt using flash bar
+function promptInline(labelTxt, placeholder, onConfirm){
+  const f=document.getElementById('flash');
+  f.style.opacity=1;
+  f.innerHTML=`<span style="font-size:11px;margin-right:6px">${labelTxt}</span>
+    <input id="inline-prompt-input" value="" placeholder="${placeholder}"
+      style="border:none;outline:none;background:transparent;font-family:var(--mono);font-size:11px;color:var(--text);width:140px"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmPrompt();}if(event.key==='Escape'){document.getElementById('flash').style.opacity=0;}">
+    <button onclick="_confirmPrompt()" style="border:none;background:rgba(var(--a1-rgb),.15);color:var(--a1);padding:2px 10px;border-radius:100px;font-size:11px;cursor:pointer;margin-left:4px">Create</button>`;
+  window._promptCb=onConfirm;
+  setTimeout(()=>document.getElementById('inline-prompt-input')?.focus(),30);
+}
+function _confirmPrompt(){
+  const val=document.getElementById('inline-prompt-input')?.value.trim()||'Untitled Folder';
+  document.getElementById('flash').style.opacity=0;
+  if(window._promptCb){ window._promptCb(val); window._promptCb=null; }
+}
+
+// ── RENDER FOLDERS ──
+function renderFolderCard(r, n, origIdx, col){
+  const del=`<button class="folder-del" onclick="event.stopPropagation();deleteNote('${r.id}',${origIdx})" title="Delete folder">×</button>`;
+  const TASK_TYPES=['todo','event','reminder','quicktask'];
+  // Get child notes
+  const children=(n.noteIds||[]).map(id=>r.notes.find(nn=>nn.id===id)).filter(Boolean);
+  const caretClass=n.open===false?'':'open';
+  const bodyClass=n.open===false?'closed':'';
+
+  const childrenHtml=children.map(child=>{
+    const ci=r.notes.indexOf(child);
+    const cdel=`<button class="nc-del" onclick="event.stopPropagation();removeFolderItem('${r.id}',${origIdx},'${child.id}')" title="Remove from folder">×</button>`;
+    if(col==='notes'){
+      if(child.type==='extended') return renderXNoteCard(r.id,child,ci).replace('oncontextmenu','data-in-folder="1" oncontextmenu');
+      if(child.type&&child.type!=='simple') return renderAtCard(r,child,ci);
+      return renderSimpleCard(r.id,child,ci,ci);
+    } else {
+      if(child.type==='todo') return renderTodoCard(r.id,child,ci);
+      return renderAtCard(r,child,ci);
+    }
+  }).join('');
+
+  return `<div class="${col==='notes'?'note-folder':'task-folder'}">
+    ${del}
+    <div class="folder-header" onclick="toggleFolder('${r.id}',${origIdx})">
+      <span class="folder-icon">${col==='notes'?'▸':'▸'}</span>
+      <input class="folder-name-input" value="${escHtml(n.name||'Folder')}"
+        onclick="event.stopPropagation()"
+        onblur="renameFolderItem('${r.id}',${origIdx},this.value)"
+        onkeydown="if(event.key==='Enter')this.blur()">
+      <span class="folder-count">${children.length} item${children.length===1?'':'s'}</span>
+      <span class="folder-caret ${caretClass}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div class="folder-body ${bodyClass}">
+      ${childrenHtml||'<div style="font-size:11px;color:var(--text3);font-family:var(--mono);padding:4px 0">Empty folder</div>'}
+    </div>
+  </div>`;
+}
+
+function toggleFolder(rid,idx){
+  const r=rivers.find(r=>r.id==rid); if(!r) return;
+  r.notes[idx].open=!(r.notes[idx].open!==false);
+  saveData(); renderNotes();
+}
+function renameFolderItem(rid,idx,name){
+  const r=rivers.find(r=>r.id==rid); if(!r) return;
+  r.notes[idx].name=name.trim()||'Folder'; saveData();
+}
+function removeFolderItem(rid,folderIdx,childId){
+  const r=rivers.find(r=>r.id==rid); if(!r) return;
+  const folder=r.notes[folderIdx]; if(!folder) return;
+  folder.noteIds=(folder.noteIds||[]).filter(id=>id!==childId);
+  saveData(); renderNotes();
 }
 
 //  COLUMN COLLAPSE
